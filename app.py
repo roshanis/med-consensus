@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 import streamlit as st
 import json
+from typing import List, Dict
+from openai import OpenAI
 from dotenv import load_dotenv
 from virtual_lab.agent import Agent
 from virtual_lab.run_meeting import run_meeting
@@ -11,6 +13,12 @@ load_dotenv(BASE_DIR / ".env")
 
 st.set_page_config(page_title="Medical Multi‑Agent Consensus", layout="wide")
 st.title("Medical Multi‑Agent Consensus")
+
+# Initialize session state containers
+if "clarifying_questions" not in st.session_state:
+    st.session_state.clarifying_questions = []
+if "clarifying_answers" not in st.session_state:
+    st.session_state.clarifying_answers = {}
 
 with st.sidebar:
     st.header("API & Run Settings")
@@ -36,6 +44,77 @@ agenda = st.text_area(
     placeholder="e.g., A 58-year-old with chest pain...",
     height=120,
 )
+
+# Clarity assistant
+st.subheader("Clarity Assistant")
+st.caption("Let the AI ask clarifying questions if the case description is ambiguous or missing key details.")
+col_ca1, col_ca2 = st.columns([1, 3])
+with col_ca1:
+    suggest_btn = st.button("Suggest Clarifying Questions")
+with col_ca2:
+    max_q = st.slider("Max questions", min_value=3, max_value=10, value=5)
+
+def generate_clarifying_questions(case_text: str, max_questions: int, model_name: str) -> List[str]:
+    client = OpenAI()
+    system = (
+        "You are a clinical intake assistant. Read the user's case description and draft concise clarifying "
+        "questions to remove ambiguity and fill missing critical details (history, timing, risk factors, red flags, "
+        "medications, vitals, pertinent negatives). Do not answer; only ask necessary questions."
+    )
+    user = f"Case description:\n\n{case_text}\n\nReturn {max_questions} numbered clarifying questions."
+    resp = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        temperature=0.2,
+    )
+    content = resp.choices[0].message.content if resp.choices else ""
+    # Parse lines that look like numbered items
+    questions: List[str] = []
+    for line in content.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        # Strip leading numbering like "1. ", "- ", "• "
+        if line[0].isdigit():
+            # remove leading number and dot
+            q = line.split(".", 1)
+            line = q[1].strip() if len(q) > 1 else line
+        if line.startswith(("- ", "• ")):
+            line = line[2:].strip()
+        questions.append(line)
+    # Deduplicate and trim to max
+    uniq: List[str] = []
+    for q in questions:
+        if q and q not in uniq:
+            uniq.append(q)
+    return uniq[:max_questions]
+
+if suggest_btn:
+    # Use sidebar key if provided
+    if api_key:
+        os.environ["OPENAI_API_KEY"] = api_key
+    if not os.environ.get("OPENAI_API_KEY"):
+        st.error("Please set your OpenAI API key in the sidebar or .env before generating questions.")
+    elif not agenda.strip():
+        st.error("Please enter a case description first.")
+    else:
+        try:
+            questions_list = generate_clarifying_questions(agenda, max_q, model)
+            st.session_state.clarifying_questions = questions_list
+            # Initialize answer slots for new questions
+            for q in questions_list:
+                st.session_state.clarifying_answers.setdefault(q, "")
+            st.success("Clarifying questions generated.")
+        except Exception as e:
+            st.exception(e)
+
+if st.session_state.clarifying_questions:
+    with st.expander("Clarifying Questions (answer to improve precision)", expanded=True):
+        for q in st.session_state.clarifying_questions:
+            st.session_state.clarifying_answers[q] = st.text_area(q, value=st.session_state.clarifying_answers.get(q, ""), height=70)
 
 st.subheader("Agenda Questions")
 def_questions = [
@@ -153,6 +232,17 @@ if run_btn:
         st.error("Please provide a case description (agenda).")
     else:
         os.environ["OPENAI_API_KEY"] = api_key
+        # Build clarifications context
+        clarifications_text = ""
+        if st.session_state.clarifying_questions:
+            qa_lines = ["Clarifications provided by user:"]
+            for cq in st.session_state.clarifying_questions:
+                ans = st.session_state.clarifying_answers.get(cq, "").strip()
+                if ans:
+                    qa_lines.append(f"- {cq}\n  Answer: {ans}")
+                else:
+                    qa_lines.append(f"- {cq}\n  Answer: (not provided)")
+            clarifications_text = "\n".join(qa_lines)
         team_lead = Agent(
             title=lead_title,
             expertise=lead_expertise,
@@ -181,16 +271,33 @@ if run_btn:
                     team_members=team_members,
                     agenda_questions=agenda_qs,
                     agenda_rules=agenda_rules,
+                    contexts=(clarifications_text,) if clarifications_text else (),
                     num_rounds=st.session_state.get("num_rounds_override", None) or int(num_rounds),
                     temperature=float(temperature),
                     pubmed_search=bool(pubmed),
                     return_summary=True,
                 )
-                output_container.subheader("Consensus Summary")
-                output_container.markdown(summary)
-
-                # Transparency: render artifacts for this session
-                render_session_artifacts(save_name)
+                tabs = st.tabs(["Consensus Summary", "Transcript", "Raw JSON"]) 
+                with tabs[0]:
+                    output_container.subheader("Consensus Summary")
+                    output_container.markdown(summary)
+                with tabs[1]:
+                    # Transcript
+                    render_session_artifacts(save_name)
+                with tabs[2]:
+                    # Only render JSON section
+                    save_dir = BASE_DIR / "medical_meetings"
+                    json_path = save_dir / f"{save_name}.json"
+                    if json_path.exists():
+                        with open(json_path, "r", encoding="utf-8") as f:
+                            json_content = f.read()
+                        try:
+                            messages = json.loads(json_content)
+                            st.json(messages)
+                        except Exception:
+                            st.code(json_content, language="json")
+                    else:
+                        st.info("Messages (.json) not found.")
             except Exception as e:
                 st.exception(e)
 
