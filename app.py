@@ -11,8 +11,57 @@ from virtual_lab.run_meeting import run_meeting
 BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
-st.set_page_config(page_title="Medical Multi‑Agent Consensus", layout="wide")
-st.title("Medical Multi‑Agent Consensus")
+st.set_page_config(page_title="Medical Multi‑Agent Consensus", page_icon="🏥", layout="wide")
+
+# Global styles
+st.markdown(
+    """
+    <style>
+    /* Typography */
+    h1, h2, h3, h4 { letter-spacing: 0.2px; }
+    .hero-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .hero-subtitle { color: #5c6b7a; margin-top: 0; }
+
+    /* Cards */
+    .card {
+      padding: 1rem 1.2rem;
+      border-radius: 14px;
+      background: var(--secondary-bg, #F5F7FB);
+      border: 1px solid #e8ebf3;
+      box-shadow: 0 2px 6px rgba(16,24,40,.06);
+      margin-bottom: 1rem;
+    }
+
+    /* Buttons */
+    .stButton > button {
+      border-radius: 10px;
+      padding: 0.55rem 0.9rem;
+      font-weight: 600;
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab"] { font-weight: 600; }
+
+    /* Expanders */
+    .st-expander > summary { font-weight: 600; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background:#e9f2ff; color:#0d6efd; font-size: 12px; margin-right:8px; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+# Hero header
+left_h, right_h = st.columns([3, 1])
+with left_h:
+    st.markdown("<div class='hero-title'>🏥 Multispecialty Medical Consensus</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='hero-subtitle'>Coordinate cardiology, emergency medicine, pharmacotherapy, and ethics specialists to deliver a clear, evidence‑based plan.</div>",
+        unsafe_allow_html=True,
+    )
+with right_h:
+    st.markdown("<span class='badge'>Interactive</span><span class='badge'>Transparent</span><span class='badge'>Evidence‑aware</span>", unsafe_allow_html=True)
 
 # Initialize session state containers
 if "clarifying_questions" not in st.session_state:
@@ -38,21 +87,27 @@ with st.sidebar:
     selected_session = st.selectbox("Select a session to view", [""] + existing, index=0)
     load_btn = st.button("Load Session")
 
-st.subheader("Case Description (Agenda)")
-agenda = st.text_area(
-    "Describe the case", 
-    placeholder="e.g., A 58-year-old with chest pain...",
-    height=120,
-)
+col_case, col_clarity = st.columns([3, 2], vertical_alignment="top")
+with col_case:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("Case Description (Agenda)")
+    agenda = st.text_area(
+        "Describe the case",
+        placeholder="e.g., A 58-year-old with chest pain...",
+        height=140,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# Clarity assistant
-st.subheader("Clarity Assistant")
-st.caption("Let the AI ask clarifying questions if the case description is ambiguous or missing key details.")
-col_ca1, col_ca2 = st.columns([1, 3])
-with col_ca1:
-    suggest_btn = st.button("Suggest Clarifying Questions")
-with col_ca2:
-    max_q = st.slider("Max questions", min_value=3, max_value=10, value=5)
+with col_clarity:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("Clarity Assistant")
+    st.caption("Let the AI ask clarifying questions if the case description is ambiguous or missing key details.")
+    col_ca1, col_ca2 = st.columns([1, 1])
+    with col_ca1:
+        suggest_btn = st.button("Suggest Questions")
+    with col_ca2:
+        max_q = st.slider("Max Qs", min_value=3, max_value=10, value=5)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def generate_clarifying_questions(case_text: str, max_questions: int, model_name: str) -> List[str]:
     client = OpenAI()
@@ -116,6 +171,7 @@ if st.session_state.clarifying_questions:
         for q in st.session_state.clarifying_questions:
             st.session_state.clarifying_answers[q] = st.text_area(q, value=st.session_state.clarifying_answers.get(q, ""), height=70)
 
+st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.subheader("Agenda Questions")
 def_questions = [
     "What are the top differential diagnoses with estimated probabilities?",
@@ -142,7 +198,9 @@ rules = st.text_area(
     value="\n".join(def_rules),
     height=120,
 )
+st.markdown("</div>", unsafe_allow_html=True)
 
+st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.subheader("Team Configuration")
 lead_title = st.text_input("Team Lead Title", value="Attending Physician")
 lead_expertise = st.text_input("Team Lead Expertise", value="internal medicine, evidence-based guidelines, diagnostic reasoning")
@@ -164,6 +222,7 @@ with col4:
     m4_exp = st.text_input("Member 4 Expertise", value="patient safety, ethics, shared decision-making, risk stratification")
 
 run_btn = st.button("Run Team Meeting", type="primary")
+st.markdown("</div>", unsafe_allow_html=True)
 
 output_container = st.container()
 
@@ -277,7 +336,7 @@ if run_btn:
                     pubmed_search=bool(pubmed),
                     return_summary=True,
                 )
-                tabs = st.tabs(["Consensus Summary", "Transcript", "Raw JSON"]) 
+                tabs = st.tabs(["🧭 Consensus Summary", "🗒️ Transcript", "🧱 Raw JSON"]) 
                 with tabs[0]:
                     output_container.subheader("Consensus Summary")
                     output_container.markdown(summary)
