@@ -75,7 +75,7 @@ with st.sidebar:
     temperature = st.slider("Temperature", 0.0, 1.0, 0.2, 0.1)
     num_rounds = st.slider("Discussion Rounds", 1, 5, 2, 1)
     pubmed = st.checkbox("Enable PubMed Search", value=False)
-    model = st.selectbox("Model", ["gpt-4o", "gpt-4o-mini"], index=0)
+    model = st.selectbox("Model", ["gpt-5", "gpt-4o", "gpt-4o-mini"], index=0)
     save_name = st.text_input("Session name", value="web_case", help="Used to name saved artifacts (.md/.json)")
     
     # Loader for previous sessions
