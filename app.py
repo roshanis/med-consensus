@@ -58,7 +58,7 @@ with st.sidebar:
     num_rounds = st.slider("Discussion Rounds", 1, 5, 2, 1)
     pubmed = st.checkbox("Enable PubMed Search", value=False)
     model = st.selectbox("Model", ["gpt-5", "gpt-5-nano", "gpt-4o", "gpt-4o-mini"], index=0)
-    save_name = st.text_input("Session name", value="web_case", help="Used to name saved artifacts (.md/.json)")
+    st.caption("Sessions are auto-numbered (web_00001, web_00002, …) and only the latest 5 are kept.")
     
     # Loader for previous sessions
     st.markdown("---")
@@ -344,6 +344,57 @@ def render_session_artifacts(session_name: str):
     else:
         st.info("Messages (.json) not found.")
 
+
+# ----- Web session naming and pruning helpers -----
+def _get_web_session_basenames(save_dir: Path) -> list[str]:
+    names = set()
+    for p in list(save_dir.glob("web_*.md")) + list(save_dir.glob("web_*.json")):
+        names.add(p.stem)
+    return sorted(names)
+
+
+def _make_next_web_session_name(save_dir: Path) -> str:
+    import re
+    max_idx = 0
+    for stem in _get_web_session_basenames(save_dir):
+        m = re.match(r"web_(\d+)$", stem)
+        if m:
+            try:
+                idx = int(m.group(1))
+                if idx > max_idx:
+                    max_idx = idx
+            except ValueError:
+                pass
+    return f"web_{max_idx + 1:05d}"
+
+
+def _prune_web_sessions(save_dir: Path, max_sessions: int = 5) -> None:
+    from typing import Tuple
+    stems = _get_web_session_basenames(save_dir)
+    if len(stems) <= max_sessions:
+        return
+    # Compute last modified time per session (max of md/json)
+    def mtime_for(stem: str) -> float:
+        md = save_dir / f"{stem}.md"
+        js = save_dir / f"{stem}.json"
+        times: list[float] = []
+        if md.exists():
+            times.append(md.stat().st_mtime)
+        if js.exists():
+            times.append(js.stat().st_mtime)
+        return max(times) if times else 0.0
+
+    stems_sorted = sorted(stems, key=mtime_for, reverse=True)
+    to_delete = stems_sorted[max_sessions:]
+    for stem in to_delete:
+        for ext in (".md", ".json"):
+            path = save_dir / f"{stem}{ext}"
+            if path.exists():
+                try:
+                    path.unlink()
+                except Exception:
+                    pass
+
 if run_btn:
     if not _default_api_key:
         st.error("OpenAI API key missing. Set it in .streamlit/secrets.toml or the environment.")
@@ -382,6 +433,8 @@ if run_btn:
         save_dir.mkdir(parents=True, exist_ok=True)
         with st.spinner("Running team meeting... this may take a few minutes"):
             try:
+                # Auto-number session name and prune to keep the latest 5 web_* sessions
+                auto_save_name = _make_next_web_session_name(save_dir)
                 summary = run_meeting_cached(
                     agenda=agenda,
                     agenda_questions=agenda_qs,
@@ -391,19 +444,20 @@ if run_btn:
                     pubmed_search=bool(pubmed),
                     team_lead_data=_serialize_agent(team_lead),
                     team_members_data=tuple(_serialize_agent(m) for m in team_members),
-                    save_name=save_name,
+                    save_name=auto_save_name,
                 )
+                _prune_web_sessions(save_dir, max_sessions=5)
                 tabs = st.tabs(["🧭 Consensus Summary", "🗒️ Transcript", "🧱 Raw JSON"]) 
                 with tabs[0]:
                     output_container.subheader("Consensus Summary")
                     output_container.markdown(summary)
                 with tabs[1]:
                     # Transcript
-                    render_session_artifacts(save_name)
+                    render_session_artifacts(auto_save_name)
                 with tabs[2]:
                     # Only render JSON section
                     save_dir = BASE_DIR / "medical_meetings"
-                    json_path = save_dir / f"{save_name}.json"
+                    json_path = save_dir / f"{auto_save_name}.json"
                     if json_path.exists():
                         with open(json_path, "r", encoding="utf-8") as f:
                             json_content = f.read()
