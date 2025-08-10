@@ -36,6 +36,14 @@ with left_h:
 with right_h:
     st.markdown("<span class='badge'>Interactive</span><span class='badge'>Transparent</span><span class='badge'>Evidence‑aware</span>", unsafe_allow_html=True)
 
+# Legal disclaimer
+st.warning(
+    "This application is an educational prototype and does not provide medical advice. "
+    "It is not intended to diagnose, treat, cure, or prevent any disease. "
+    "Always seek the guidance of a qualified healthcare professional. Do not enter protected health information (PHI).",
+    icon="⚠️",
+)
+
 # Initialize session state containers
 if "clarifying_questions" not in st.session_state:
     st.session_state.clarifying_questions = []
