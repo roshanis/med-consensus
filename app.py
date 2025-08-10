@@ -162,6 +162,62 @@ def generate_clarifying_questions(case_text: str, max_questions: int, model_name
             uniq.append(q)
     return uniq[:max_questions]
 
+
+# ----- Full meeting caching -----
+def _serialize_agent(agent: Agent) -> Dict[str, str]:
+    return {
+        "title": agent.title,
+        "expertise": agent.expertise,
+        "goal": agent.goal,
+        "role": agent.role,
+        "model": agent.model,
+    }
+
+
+def _deserialize_agent(data: Dict[str, str]) -> Agent:
+    return Agent(
+        title=data["title"],
+        expertise=data["expertise"],
+        goal=data["goal"],
+        role=data["role"],
+        model=data["model"],
+    )
+
+
+@st.cache_data(show_spinner=True, ttl=60 * 60 * 24)
+def run_meeting_cached(
+    agenda: str,
+    agenda_questions: tuple[str, ...],
+    agenda_rules: tuple[str, ...],
+    contexts: tuple[str, ...],
+    num_rounds: int,
+    temperature: float,
+    pubmed_search: bool,
+    team_lead_data: Dict[str, str],
+    team_members_data: tuple[Dict[str, str], ...],
+    save_name: str,
+) -> str:
+    save_dir = BASE_DIR / "medical_meetings"
+    save_dir.mkdir(parents=True, exist_ok=True)
+    team_lead = _deserialize_agent(team_lead_data)
+    team_members = tuple(_deserialize_agent(d) for d in team_members_data)
+    summary = run_meeting(
+        meeting_type="team",
+        agenda=agenda,
+        save_dir=save_dir,
+        save_name=save_name,
+        team_lead=team_lead,
+        team_members=team_members,
+        agenda_questions=agenda_questions,
+        agenda_rules=agenda_rules,
+        contexts=contexts,
+        num_rounds=num_rounds,
+        temperature=temperature,
+        pubmed_search=pubmed_search,
+        return_summary=True,
+    )
+    return summary
+
 if suggest_btn:
     # Use sidebar key if provided
     if api_key:
@@ -344,20 +400,17 @@ if run_btn:
             try:
                 # Use default temp for nano models (they only support default temp)
                 effective_temp = 1.0 if "nano" in model.lower() else float(temperature)
-                summary = run_meeting(
-                    meeting_type="team",
+                summary = run_meeting_cached(
                     agenda=agenda,
-                    save_dir=save_dir,
-                    save_name=save_name,
-                    team_lead=team_lead,
-                    team_members=team_members,
                     agenda_questions=agenda_qs,
                     agenda_rules=agenda_rules,
                     contexts=(clarifications_text,) if clarifications_text else (),
                     num_rounds=st.session_state.get("num_rounds_override", None) or int(num_rounds),
                     temperature=effective_temp,
                     pubmed_search=bool(pubmed),
-                    return_summary=True,
+                    team_lead_data=_serialize_agent(team_lead),
+                    team_members_data=tuple(_serialize_agent(m) for m in team_members),
+                    save_name=save_name,
                 )
                 tabs = st.tabs(["🧭 Consensus Summary", "🗒️ Transcript", "🧱 Raw JSON"]) 
                 with tabs[0]:
