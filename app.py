@@ -4,12 +4,10 @@ import streamlit as st
 import json
 from typing import List, Dict
 from openai import OpenAI
-from dotenv import load_dotenv
 from virtual_lab.agent import Agent
 from virtual_lab.run_meeting import run_meeting
 
 BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
 
 st.set_page_config(page_title="Medical Multi‑Agent Consensus", page_icon="🏥", layout="wide")
 
@@ -51,12 +49,13 @@ if "clarifying_answers" not in st.session_state:
 with st.sidebar:
     st.header("API & Run Settings")
     # Prefer Streamlit secrets if present, otherwise env (no manual input)
-    _default_api_key = os.environ.get("OPENAI_API_KEY", "")
+    # Only look in Streamlit secrets (ignore .env and process env)
+    _default_api_key = ""
     try:
         if "OPENAI_API_KEY" in st.secrets:
-            _default_api_key = st.secrets["OPENAI_API_KEY"] or _default_api_key
+            _default_api_key = st.secrets["OPENAI_API_KEY"] or ""
     except Exception:
-        pass
+        _default_api_key = ""
     st.caption(
         "OpenAI API key: "
         + ("loaded from secrets/env" if _default_api_key else "missing — set in .streamlit/secrets.toml or environment")
@@ -203,7 +202,7 @@ if suggest_btn:
     # Use sidebar key if provided
     if _default_api_key:
         os.environ["OPENAI_API_KEY"] = _default_api_key
-    if not os.environ.get("OPENAI_API_KEY"):
+    if not _default_api_key:
         st.error("Please set your OpenAI API key in the sidebar or .env before generating questions.")
     elif not agenda.strip():
         st.error("Please enter a case description first.")
@@ -343,7 +342,7 @@ def render_session_artifacts(session_name: str):
         st.info("Messages (.json) not found.")
 
 if run_btn:
-    if not (_default_api_key or os.environ.get("OPENAI_API_KEY")):
+    if not _default_api_key:
         st.error("OpenAI API key missing. Set it in .streamlit/secrets.toml or the environment.")
     elif not agenda.strip():
         st.error("Please provide a case description (agenda).")
