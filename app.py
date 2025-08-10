@@ -97,10 +97,9 @@ with col_clarity:
         max_q = st.slider("Max Qs", min_value=3, max_value=10, value=5)
     st.markdown("</div>", unsafe_allow_html=True)
 
-def _supports_temperature(model_name: str) -> bool:
-    lower = model_name.lower()
-    # Only gpt-4o family supports custom temperature here; gpt-5 and nano use default
-    return lower.startswith("gpt-4o")
+"""
+All model calls use provider defaults; no temperature control.
+"""
 
 
 @st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
@@ -112,16 +111,13 @@ def generate_clarifying_questions(case_text: str, max_questions: int, model_name
         "medications, vitals, pertinent negatives). Do not answer; only ask necessary questions."
     )
     user = f"Case description:\n\n{case_text}\n\nReturn {max_questions} numbered clarifying questions."
-    params = {
-        "model": model_name,
-        "messages": [
+    resp = client.chat.completions.create(
+        model=model_name,
+        messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-    }
-    if _supports_temperature(model_name):
-        params["temperature"] = 0.2
-    resp = client.chat.completions.create(**params)
+    )
     content = resp.choices[0].message.content if resp.choices else ""
     # Parse lines that look like numbered items
     questions: List[str] = []
@@ -173,7 +169,6 @@ def run_meeting_cached(
     agenda_rules: tuple[str, ...],
     contexts: tuple[str, ...],
     num_rounds: int,
-    temperature: float,
     pubmed_search: bool,
     team_lead_data: Dict[str, str],
     team_members_data: tuple[Dict[str, str], ...],
@@ -194,7 +189,7 @@ def run_meeting_cached(
         agenda_rules=agenda_rules,
         contexts=contexts,
         num_rounds=num_rounds,
-        temperature=temperature,
+        temperature=1.0,
         pubmed_search=pubmed_search,
         return_summary=True,
     )
@@ -381,15 +376,12 @@ if run_btn:
         save_dir.mkdir(parents=True, exist_ok=True)
         with st.spinner("Running team meeting... this may take a few minutes"):
             try:
-                # Use default temp for gpt-5 family (including nano)
-                effective_temp = 1.0 if model.lower().startswith("gpt-5") else float(temperature)
                 summary = run_meeting_cached(
                     agenda=agenda,
                     agenda_questions=agenda_qs,
                     agenda_rules=agenda_rules,
                     contexts=(clarifications_text,) if clarifications_text else (),
                     num_rounds=st.session_state.get("num_rounds_override", None) or int(num_rounds),
-                    temperature=effective_temp,
                     pubmed_search=bool(pubmed),
                     team_lead_data=_serialize_agent(team_lead),
                     team_members_data=tuple(_serialize_agent(m) for m in team_members),
