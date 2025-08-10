@@ -47,7 +47,6 @@ if "clarifying_answers" not in st.session_state:
     st.session_state.clarifying_answers = {}
 
 with st.sidebar:
-    st.header("API & Run Settings")
     # Prefer Streamlit secrets if present, otherwise env (no manual input)
     # Only look in Streamlit secrets (ignore .env and process env)
     _default_api_key = ""
@@ -56,11 +55,6 @@ with st.sidebar:
             _default_api_key = st.secrets["OPENAI_API_KEY"] or ""
     except Exception:
         _default_api_key = ""
-    st.caption(
-        "OpenAI API key: "
-        + ("loaded from secrets/env" if _default_api_key else "missing — set in .streamlit/secrets.toml or environment")
-    )
-    temperature = st.slider("Temperature", 0.0, 1.0, 0.2, 0.1)
     num_rounds = st.slider("Discussion Rounds", 1, 5, 2, 1)
     pubmed = st.checkbox("Enable PubMed Search", value=False)
     model = st.selectbox("Model", ["gpt-5", "gpt-5-nano", "gpt-4o", "gpt-4o-mini"], index=0)
