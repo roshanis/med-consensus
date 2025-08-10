@@ -50,7 +50,14 @@ if "clarifying_answers" not in st.session_state:
 
 with st.sidebar:
     st.header("API & Run Settings")
-    api_key = st.text_input("OpenAI API Key", value=os.environ.get("OPENAI_API_KEY", ""), type="password")
+    # Prefer Streamlit secrets if present, otherwise env
+    _default_api_key = os.environ.get("OPENAI_API_KEY", "")
+    try:
+        if "OPENAI_API_KEY" in st.secrets:
+            _default_api_key = st.secrets["OPENAI_API_KEY"] or _default_api_key
+    except Exception:
+        pass
+    api_key = st.text_input("OpenAI API Key", value=_default_api_key, type="password")
     temperature = st.slider("Temperature", 0.0, 1.0, 0.2, 0.1)
     num_rounds = st.slider("Discussion Rounds", 1, 5, 2, 1)
     pubmed = st.checkbox("Enable PubMed Search", value=False)
@@ -193,6 +200,8 @@ if suggest_btn:
     # Use sidebar key if provided
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
+    elif _default_api_key:
+        os.environ["OPENAI_API_KEY"] = _default_api_key
     if not os.environ.get("OPENAI_API_KEY"):
         st.error("Please set your OpenAI API key in the sidebar or .env before generating questions.")
     elif not agenda.strip():
@@ -338,7 +347,10 @@ if run_btn:
     elif not agenda.strip():
         st.error("Please provide a case description (agenda).")
     else:
-        os.environ["OPENAI_API_KEY"] = api_key
+        if api_key:
+            os.environ["OPENAI_API_KEY"] = api_key
+        elif _default_api_key:
+            os.environ["OPENAI_API_KEY"] = _default_api_key
         # Build clarifications context
         clarifications_text = ""
         if st.session_state.clarifying_questions:
