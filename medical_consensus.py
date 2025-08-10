@@ -18,7 +18,7 @@ TEAM_LEAD = Agent(
     expertise="internal medicine, evidence-based guidelines, diagnostic reasoning",
     goal="coordinate the team to analyze the case, resolve disagreements, and deliver a concise, actionable consensus plan",
     role="team lead and final arbiter",
-    model="gpt-5"
+    model="gpt-5-nano"
 )
 
 TEAM_MEMBERS = (
@@ -27,28 +27,28 @@ TEAM_MEMBERS = (
         expertise="diagnostic heuristics, Bayesian reasoning, pattern recognition",
         goal="propose and prioritize differential diagnoses with probabilities and justifications",
         role="generate differentials and evaluate likelihoods",
-        model="gpt-5"
+        model="gpt-5-nano"
     ),
     Agent(
         title="Evidence Synthesis Specialist",
         expertise="clinical trials, guidelines (e.g., ACC/AHA, IDSA), systematic reviews",
         goal="summarize best available evidence relevant to diagnosis and management",
         role="evidence reviewer",
-        model="gpt-5"
+        model="gpt-5-nano"
     ),
     Agent(
         title="Pharmacotherapy Expert",
         expertise="drug selection, dosing, contraindications, interactions, renal/hepatic adjustments",
         goal="recommend safe and effective medication plan and monitoring",
         role="therapeutics recommender",
-        model="gpt-5"
+        model="gpt-5-nano"
     ),
     Agent(
         title="Risk and Ethics Officer",
         expertise="patient safety, ethics, shared decision-making, risk stratification",
         goal="identify risks, contraindications, and consent considerations; ensure patient-centered plan",
         role="risk mitigation and ethics",
-        model="gpt-5"
+        model="gpt-5-nano"
     ),
 )
 
