@@ -75,7 +75,7 @@ with st.sidebar:
     temperature = st.slider("Temperature", 0.0, 1.0, 0.2, 0.1)
     num_rounds = st.slider("Discussion Rounds", 1, 5, 2, 1)
     pubmed = st.checkbox("Enable PubMed Search", value=False)
-    model = st.selectbox("Model", ["gpt-5", "gpt-4o", "gpt-4o-mini"], index=0)
+    model = st.selectbox("Model", ["gpt-5", "gpt-5-nano", "gpt-4o", "gpt-4o-mini"], index=0)
     save_name = st.text_input("Session name", value="web_case", help="Used to name saved artifacts (.md/.json)")
     
     # Loader for previous sessions
@@ -109,6 +109,7 @@ with col_clarity:
         max_q = st.slider("Max Qs", min_value=3, max_value=10, value=5)
     st.markdown("</div>", unsafe_allow_html=True)
 
+@st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
 def generate_clarifying_questions(case_text: str, max_questions: int, model_name: str) -> List[str]:
     client = OpenAI()
     system = (
@@ -165,6 +166,12 @@ if suggest_btn:
             st.success("Clarifying questions generated.")
         except Exception as e:
             st.exception(e)
+
+# Optional cache controls
+with st.sidebar:
+    if st.button("Clear prompt cache"):
+        generate_clarifying_questions.clear()
+        st.success("Prompt cache cleared.")
 
 if st.session_state.clarifying_questions:
     with st.expander("Clarifying Questions (answer to improve precision)", expanded=True):
