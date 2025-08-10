@@ -30,7 +30,7 @@ left_h, right_h = st.columns([3, 1])
 with left_h:
     st.markdown("<div class='hero-title'>🏥 Multispecialty Medical Triage</div>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='hero-subtitle'>Coordinate cardiology, emergency medicine, pharmacotherapy, and ethics specialists to deliver a clear, evidence‑based plan.</div>",
+        "<div class='hero-subtitle'>Internal Medicine–led panel coordinating cardiology, emergency medicine, pharmacotherapy, and ethics specialists to deliver a clear, evidence‑based plan.</div>",
         unsafe_allow_html=True,
     )
 with right_h:
@@ -268,7 +268,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown("<div class='card'>", unsafe_allow_html=True)
 st.subheader("Team Configuration")
-lead_title = st.text_input("Team Lead Title", value="Attending Physician")
+lead_title = st.text_input("Team Lead Title", value="Internal Medicine Attending Physician")
 lead_expertise = st.text_input("Team Lead Expertise", value="internal medicine, evidence-based guidelines, diagnostic reasoning")
 
 col1, col2 = st.columns(2)
