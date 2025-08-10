@@ -13,48 +13,19 @@ load_dotenv(BASE_DIR / ".env")
 
 st.set_page_config(page_title="Medical Multi‑Agent Consensus", page_icon="🏥", layout="wide")
 
-# Global styles
+"""
+Minimal CSS to remove top white band and keep a clean, native look.
+"""
 st.markdown(
     """
     <style>
-    /* Typography */
-    h1, h2, h3, h4 { letter-spacing: 0.2px; }
-    .hero-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.25rem; }
-    .hero-subtitle { color: #5c6b7a; margin-top: 0; }
-
-    /* Cards */
-    .card {
-      padding: 1rem 1.2rem;
-      border-radius: 14px;
-      background: var(--secondary-bg, #F5F7FB);
-      border: 1px solid #e8ebf3;
-      box-shadow: 0 2px 6px rgba(16,24,40,.06);
-      margin-bottom: 1rem;
-    }
-
-    /* Buttons */
-    .stButton > button {
-      border-radius: 10px;
-      padding: 0.55rem 0.9rem;
-      font-weight: 600;
-    }
-
-    /* Tabs */
-    .stTabs [data-baseweb="tab"] { font-weight: 600; }
-
-    /* Expanders */
-    .st-expander > summary { font-weight: 600; }
-
-    /* Badges */
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background:#e9f2ff; color:#0d6efd; font-size: 12px; margin-right:8px; }
-
-    /* Remove default Streamlit header/toolbar white band */
     [data-testid="stHeader"] { display: none; }
     [data-testid="stToolbar"] { display: none !important; }
-    /* Reduce top padding of the main container */
     .block-container { padding-top: 0.5rem !important; }
-    /* Subtle app background to avoid stark white */
-    .stApp { background-color: #f7f9fc; }
+    .card { padding: 1rem 1.2rem; border-radius: 8px; border: 1px solid #e8ebf3; margin-bottom: 1rem; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background:#eef3ff; color:#2952ff; font-size: 12px; margin-right:8px; }
+    .hero-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .hero-subtitle { color: #6b7280; margin-top: 0; }
     </style>
     """,
     unsafe_allow_html=True,
