@@ -98,7 +98,9 @@ with col_clarity:
     st.markdown("</div>", unsafe_allow_html=True)
 
 def _supports_temperature(model_name: str) -> bool:
-    return "nano" not in model_name.lower()
+    lower = model_name.lower()
+    # Only gpt-4o family supports custom temperature here; gpt-5 and nano use default
+    return lower.startswith("gpt-4o")
 
 
 @st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
@@ -379,8 +381,8 @@ if run_btn:
         save_dir.mkdir(parents=True, exist_ok=True)
         with st.spinner("Running team meeting... this may take a few minutes"):
             try:
-                # Use default temp for nano models (they only support default temp)
-                effective_temp = 1.0 if "nano" in model.lower() else float(temperature)
+                # Use default temp for gpt-5 family (including nano)
+                effective_temp = 1.0 if model.lower().startswith("gpt-5") else float(temperature)
                 summary = run_meeting_cached(
                     agenda=agenda,
                     agenda_questions=agenda_qs,
