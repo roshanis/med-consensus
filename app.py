@@ -11,10 +11,6 @@ from virtual_lab.run_meeting import run_meeting
 BASE_DIR = Path(__file__).resolve().parent
 
 st.set_page_config(page_title="Medical Multi‑Agent Consensus", page_icon="🏥", layout="wide")
-
-"""
-Minimal CSS to remove top white band and keep a clean, native look.
-"""
 st.markdown(
     """
     <style>
@@ -30,10 +26,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Hero header
 left_h, right_h = st.columns([3, 1])
 with left_h:
-    st.markdown("<div class='hero-title'>🏥 Multispecialty Medical Consensus</div>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-title'>🏥 Multispecialty Medical Triage</div>", unsafe_allow_html=True)
     st.markdown(
         "<div class='hero-subtitle'>Coordinate cardiology, emergency medicine, pharmacotherapy, and ethics specialists to deliver a clear, evidence‑based plan.</div>",
         unsafe_allow_html=True,
@@ -58,7 +53,9 @@ with st.sidebar:
         _default_api_key = ""
     num_rounds = st.slider("Discussion Rounds", 1, 5, 2, 1)
     pubmed = st.checkbox("Enable PubMed Search", value=False)
-    model = st.selectbox("Model", ["gpt-5", "gpt-5-nano", "gpt-4o", "gpt-4o-mini"], index=0)
+    _model_options = ["gpt-5", "gpt-5-nano", "gpt-4o", "gpt-4o-mini"]
+    _default_idx = _model_options.index("gpt-5-nano") if "gpt-5-nano" in _model_options else 0
+    model = st.selectbox("Model", _model_options, index=_default_idx)
     st.caption("Sessions are auto-numbered (web_00001, web_00002, …) and only the latest 5 are kept.")
     
     # Loader for previous sessions
