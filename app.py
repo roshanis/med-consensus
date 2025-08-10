@@ -178,6 +178,18 @@ def run_meeting_cached(
     save_dir.mkdir(parents=True, exist_ok=True)
     team_lead = _deserialize_agent(team_lead_data)
     team_members = tuple(_deserialize_agent(d) for d in team_members_data)
+
+    # Map unsupported Assistants models (e.g., gpt-5 family) to a supported one (gpt-4o)
+    def to_assistants_model(name: str) -> str:
+        n = (name or "").lower()
+        if n.startswith("gpt-5"):
+            return "gpt-4o"
+        return name
+
+    team_lead.model = to_assistants_model(team_lead.model)
+    team_members = tuple(
+        Agent(m.title, m.expertise, m.goal, m.role, to_assistants_model(m.model)) for m in team_members
+    )
     summary = run_meeting(
         meeting_type="team",
         agenda=agenda,
