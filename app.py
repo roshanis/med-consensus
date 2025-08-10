@@ -4,6 +4,7 @@ import streamlit as st
 import json
 from typing import List, Dict
 from openai import OpenAI
+import streamlit.components.v1 as components
 from virtual_lab.agent import Agent
 from virtual_lab.run_meeting import run_meeting
 
@@ -449,8 +450,23 @@ if run_btn:
                 _prune_web_sessions(save_dir, max_sessions=5)
                 tabs = st.tabs(["🧭 Consensus Summary", "🗒️ Transcript", "🧱 Raw JSON"]) 
                 with tabs[0]:
+                    st.markdown('<div id="consensus-summary-anchor"></div>', unsafe_allow_html=True)
                     output_container.subheader("Consensus Summary")
                     output_container.markdown(summary)
+                    # Auto-scroll to summary when ready
+                    components.html(
+                        """
+                        <script>
+                        setTimeout(function(){
+                          var el = parent.document.querySelector('#consensus-summary-anchor');
+                          if (el && el.scrollIntoView) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }, 100);
+                        </script>
+                        """,
+                        height=0,
+                    )
                 with tabs[1]:
                     # Transcript
                     render_session_artifacts(auto_save_name)
