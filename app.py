@@ -109,6 +109,10 @@ with col_clarity:
         max_q = st.slider("Max Qs", min_value=3, max_value=10, value=5)
     st.markdown("</div>", unsafe_allow_html=True)
 
+def _supports_temperature(model_name: str) -> bool:
+    return "nano" not in model_name.lower()
+
+
 @st.cache_data(show_spinner=False, ttl=60 * 60 * 24)
 def generate_clarifying_questions(case_text: str, max_questions: int, model_name: str) -> List[str]:
     client = OpenAI()
@@ -118,14 +122,16 @@ def generate_clarifying_questions(case_text: str, max_questions: int, model_name
         "medications, vitals, pertinent negatives). Do not answer; only ask necessary questions."
     )
     user = f"Case description:\n\n{case_text}\n\nReturn {max_questions} numbered clarifying questions."
-    resp = client.chat.completions.create(
-        model=model_name,
-        messages=[
+    params = {
+        "model": model_name,
+        "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        temperature=0.2,
-    )
+    }
+    if _supports_temperature(model_name):
+        params["temperature"] = 0.2
+    resp = client.chat.completions.create(**params)
     content = resp.choices[0].message.content if resp.choices else ""
     # Parse lines that look like numbered items
     questions: List[str] = []
@@ -328,6 +334,8 @@ if run_btn:
         save_dir.mkdir(parents=True, exist_ok=True)
         with st.spinner("Running team meeting... this may take a few minutes"):
             try:
+                # Use default temp for nano models (they only support default temp)
+                effective_temp = 1.0 if "nano" in model.lower() else float(temperature)
                 summary = run_meeting(
                     meeting_type="team",
                     agenda=agenda,
@@ -339,7 +347,7 @@ if run_btn:
                     agenda_rules=agenda_rules,
                     contexts=(clarifications_text,) if clarifications_text else (),
                     num_rounds=st.session_state.get("num_rounds_override", None) or int(num_rounds),
-                    temperature=float(temperature),
+                    temperature=effective_temp,
                     pubmed_search=bool(pubmed),
                     return_summary=True,
                 )
