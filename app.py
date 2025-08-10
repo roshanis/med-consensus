@@ -47,6 +47,14 @@ st.markdown(
 
     /* Badges */
     .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background:#e9f2ff; color:#0d6efd; font-size: 12px; margin-right:8px; }
+
+    /* Remove default Streamlit header/toolbar white band */
+    [data-testid="stHeader"] { display: none; }
+    [data-testid="stToolbar"] { display: none !important; }
+    /* Reduce top padding of the main container */
+    .block-container { padding-top: 0.5rem !important; }
+    /* Subtle app background to avoid stark white */
+    .stApp { background-color: #f7f9fc; }
     </style>
     """,
     unsafe_allow_html=True,
