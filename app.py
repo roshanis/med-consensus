@@ -5,6 +5,7 @@ import json
 from typing import List, Dict
 from openai import OpenAI
 import streamlit.components.v1 as components
+import bleach
 from virtual_lab.agent import Agent
 from virtual_lab.run_meeting import run_meeting
 
@@ -306,9 +307,9 @@ def render_session_artifacts(session_name: str):
             # Heuristic: show the last "### Recommendation" + below when available
             summary_start = md_content.find("### Recommendation")
             if summary_start != -1:
-                st.markdown(md_content[summary_start:])
+                st.markdown(bleach.clean(md_content[summary_start:]))
             else:
-                st.markdown(md_content)
+                st.markdown(bleach.clean(md_content))
         except Exception:
             st.info("Unable to parse summary from transcript; showing full transcript below.")
     else:
@@ -320,7 +321,7 @@ def render_session_artifacts(session_name: str):
         with open(md_path, "r", encoding="utf-8") as f:
             md_content = f.read()
         with st.expander("Show full markdown transcript", expanded=True):
-            st.markdown(md_content)
+            st.markdown(bleach.clean(md_content))
         st.download_button(
             label="Download transcript (.md)",
             data=md_content,
@@ -453,11 +454,11 @@ if run_btn:
                     save_name=auto_save_name,
                 )
                 _prune_web_sessions(save_dir, max_sessions=5)
-                tabs = st.tabs(["🧭 Consensus Summary", "🗒️ Transcript", "🧱 Raw JSON"]) 
+                tabs = st.tabs(["🧭 Consensus Summary", "🗒️ Transcript", "🧱 Raw JSON"])
                 with tabs[0]:
                     st.markdown('<div id="consensus-summary-anchor"></div>', unsafe_allow_html=True)
                     output_container.subheader("Consensus Summary")
-                    output_container.markdown(summary)
+                    output_container.markdown(bleach.clean(summary))
                     # Auto-scroll to summary when ready
                     components.html(
                         """
